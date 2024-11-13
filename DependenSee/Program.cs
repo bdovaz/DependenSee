@@ -7,7 +7,7 @@ public static class Program
         {
             // if no arguments specified, instead of showing an error,
             // pretend as help command
-            Args.InvokeMain<PowerArgsProgram>(new[] { $"-{nameof(PowerArgsProgram.Help)}" });
+            Args.InvokeMain<PowerArgsProgram>([$"-{nameof(PowerArgsProgram.Help)}"]);
             return 0;
         }
         try

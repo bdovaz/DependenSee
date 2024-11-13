@@ -13,12 +13,12 @@ public class ReferenceDiscoveryService
     public bool FollowReparsePoints { get; set; }
     public string? ExcludeFolders { get; set; }
 
-    private string[]? _includeProjectNamespaces { get; set; }
-    private string[]? _excludeProjectNamespaces { get; set; }
-    private string[]? _includePackageNamespaces { get; set; }
-    private string[]? _excludePackageNamespaces { get; set; }
+    private string[]? _includeProjectNamespaces;
+    private string[]? _excludeProjectNamespaces;
+    private string[]? _includePackageNamespaces;
+    private string[]? _excludePackageNamespaces;
 
-    private bool _shouldIncludePackages { get; set; }
+    private bool _shouldIncludePackages;
 
     public DiscoveryResult Discover()
     {
@@ -30,8 +30,8 @@ public class ReferenceDiscoveryService
         _includePackageNamespaces = ParseStringToLowercaseStringArray(IncludePackageNamespaces);
         _excludePackageNamespaces = ParseStringToLowercaseStringArray(ExcludePackageNamespaces);
 
-        if (!_includeProjectNamespaces.Any()) _includeProjectNamespaces = new[] { "" };
-        if (!_includePackageNamespaces.Any()) _includePackageNamespaces = new[] { "" };
+        if (_includeProjectNamespaces.Length == 0) _includeProjectNamespaces = [string.Empty];
+        if (_includePackageNamespaces.Length == 0) _includePackageNamespaces = [string.Empty];
         _shouldIncludePackages = IncludePackages
             || !string.IsNullOrWhiteSpace(IncludePackageNamespaces)
             || !string.IsNullOrWhiteSpace(ExcludePackageNamespaces);
@@ -42,7 +42,7 @@ public class ReferenceDiscoveryService
 
     private static string[] ParseStringToLowercaseStringArray(string? list) =>
         string.IsNullOrWhiteSpace(list)
-        ? Array.Empty<string>()
+        ? []
         : list.Split(',', StringSplitOptions.RemoveEmptyEntries)
             .Select(e => e.Trim().ToLower())
             .ToArray();
@@ -75,8 +75,8 @@ public class ReferenceDiscoveryService
         {
             var id = file.Replace(SourceFolder!, "");
             var name = Path.GetFileNameWithoutExtension(file);
-            if (!_includeProjectNamespaces!.Any(i => name.ToLower().StartsWith(i))) continue;
-            if (_excludeProjectNamespaces!.Any(i => name.ToLower().StartsWith(i))) continue;
+            if (!_includeProjectNamespaces!.Any(i => name.StartsWith(i, StringComparison.CurrentCultureIgnoreCase))) continue;
+            if (_excludeProjectNamespaces!.Any(i => name.StartsWith(i, StringComparison.CurrentCultureIgnoreCase))) continue;
 
             // add this project.
             if (!result.Projects.Any(p => p.Id == id))
@@ -86,8 +86,8 @@ public class ReferenceDiscoveryService
 
             projects = projects
                     .Where(p =>
-                        _includeProjectNamespaces!.Any(i => p.Name.ToLower().StartsWith(i))
-                        && !_excludeProjectNamespaces!.Any(i => p.Name.ToLower().StartsWith(i)))
+                        _includeProjectNamespaces!.Any(i => p.Name.StartsWith(i, StringComparison.CurrentCultureIgnoreCase))
+                        && !_excludeProjectNamespaces!.Any(i => p.Name.StartsWith(i, StringComparison.CurrentCultureIgnoreCase)))
                     .ToList();
 
             foreach (var project in projects)
@@ -101,8 +101,8 @@ public class ReferenceDiscoveryService
 
             packages = packages.Where(p =>
             {
-                return _includePackageNamespaces!.Any(i => p.Name.ToLower().StartsWith(i))
-                    && !_excludePackageNamespaces!.Any(i => p.Name.ToLower().StartsWith(i));
+                return _includePackageNamespaces!.Any(i => p.Name.StartsWith(i, StringComparison.CurrentCultureIgnoreCase))
+                    && !_excludePackageNamespaces!.Any(i => p.Name.StartsWith(i, StringComparison.CurrentCultureIgnoreCase));
             }).ToList();
 
             foreach (var package in packages)
@@ -128,12 +128,12 @@ public class ReferenceDiscoveryService
         var projects = DiscoverProjectRefrences(xml, basePath);
         var packages = _shouldIncludePackages
             ? DiscoverPackageReferences(xml)
-            : Array.Empty<Package>();
+            : [];
 
         return (projects, packages);
     }
 
-    private static IEnumerable<Package> DiscoverPackageReferences(XmlDocument xml)
+    private static List<Package> DiscoverPackageReferences(XmlDocument xml)
     {
         // PackageReference = Nuget package
         // Reference = COM/DLL reference. These can have a child <HintPath>relative path to dll</HintPath>'
@@ -165,7 +165,7 @@ public class ReferenceDiscoveryService
         return allRules.FirstOrDefault(r => fullFolderPath.StartsWith(r));
     }
 
-    private IEnumerable<Project> DiscoverProjectRefrences(XmlDocument xml, string basePath)
+    private List<Project> DiscoverProjectRefrences(XmlDocument xml, string basePath)
     {
         var projectReferenceNodes = xml.SelectNodes("//*[local-name() = 'ProjectReference']")!;
         var projects = new List<Project>();
@@ -177,12 +177,12 @@ public class ReferenceDiscoveryService
 
             string filename = Path.GetFileNameWithoutExtension(fullPath);
 
-            if (!fullPath.ToLower().StartsWith(SourceFolder!.ToLower()))
+            if (!fullPath.StartsWith(SourceFolder!, StringComparison.CurrentCultureIgnoreCase))
             {
                 Console.Error.WriteLine($"Found referenced project '{fullPath}' outside of provided source folder. Run DependenSee on the parent folder of all your projects to prevent duplicates and/or missing projects from the output.\r\n\r\n");
             }
 
-            projects.Add(new Project(fullPath.Replace(SourceFolder, ""), filename));
+            projects.Add(new Project(fullPath.Replace(SourceFolder!, ""), filename));
         }
         return projects;
     }

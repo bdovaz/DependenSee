@@ -2,43 +2,25 @@
 
 public class DiscoveryResult
 {
-    public List<Project> Projects { get; } = new();
-    public List<Package> Packages { get; } = new();
-    public List<Reference> References { get; } = new();
+    public List<Project> Projects { get; } = [];
+    public List<Package> Packages { get; } = [];
+    public List<Reference> References { get; } = [];
 }
 
-public class Project
+public class Project(string id, string name)
 {
-    public string Id { get; }
-    public string Name { get; }
-
-    public Project(string id, string name)
-    {
-        Id = id;
-        Name = name;
-    }
+    public string Id { get; } = id;
+    public string Name { get; } = name;
 }
 
-public class Package
+public class Package(string id, string name)
 {
-    public string Id { get; }
-    public string Name { get; }
-
-    public Package(string id, string name)
-    {
-        Id = id;
-        Name = name;
-    }
+    public string Id { get; } = id;
+    public string Name { get; } = name;
 }
 
-public class Reference
+public class Reference(string from, string to)
 {
-    public string From { get; }
-    public string To { get; }
-
-    public Reference(string from, string to)
-    {
-        From = from;
-        To = to;
-    }
+    public string From { get; } = from;
+    public string To { get; } = to;
 }
